@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Canteen Recommendations 🍔</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background: linear-gradient(135deg, #f9f9f9, #ffe8d6);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding-top: 40px;
+      font-family: 'Poppins', sans-serif;
+    }
+    .card {
+      transition: all 0.3s ease;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    .tag {
+      cursor: pointer;
+      margin: 5px;
+      padding: 8px 15px;
+      border-radius: 20px;
+      background-color: #fff;
+      border: 1px solid #ccc;
+      transition: all 0.3s ease;
+    }
+    .tag:hover {
+      background-color: #ffb703;
+      color: white;
+      border-color: #ffb703;
+    }
+    #results {
+      margin-top: 30px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container text-center">
+    <h1 class="mb-4 fw-bold text-primary">🍴 Canteen Recommendation System</h1>
+
+    <div class="mb-3">
+      <input type="text" id="category" class="form-control form-control-lg w-50 mx-auto text-center" placeholder="Select a category or type one...">
+    </div>
+
+    <!-- Tags will be loaded here dynamically -->
+    <div id="tags" class="d-flex justify-content-center flex-wrap mb-4"></div>
+
+    <button id="getBtn" class="btn btn-lg btn-warning shadow-sm">🍕 Get Recommendations</button>
+
+    <div id="results" class="row justify-content-center"></div>
+  </div>
+
+  <script>
+    // 🧩 Load tags dynamically from Flask
+    async function loadTags() {
+      const res = await fetch('/categories');
+      const categories = await res.json();
+      const tagsContainer = document.getElementById('tags');
+
+      categories.forEach(cat => {
+        const tag = document.createElement('span');
+        tag.className = 'tag';
+        tag.textContent = cat;
+        tag.addEventListener('click', () => {
+          document.getElementById('category').value = cat;
+        });
+        tagsContainer.appendChild(tag);
+      });
+    }
+
+    loadTags();
+
+    // Fetch recommendations
+    document.getElementById('getBtn').addEventListener('click', async () => {
+      const category = document.getElementById('category').value.trim();
+      if (!category) {
+        alert("Please select or type a category first!");
+        return;
+      }
+
+      const response = await fetch(`/recommendations?category=${encodeURIComponent(category)}`);
+      const data = await response.json();
+
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.innerHTML = "";
+
+      if (data.length === 0) {
+        resultsDiv.innerHTML = `<p class="text-muted mt-3">No items found for "${category}". Try another!</p>`;
+        return;
+      }
+
+      data.forEach(item => {
+        const card = document.createElement('div');
+        card.className = "card col-md-3 m-2 p-3";
+        card.innerHTML = `
+          <h5 class="fw-bold">${item.item_name}</h5>
+          <p>💰 ₹${item.price}</p>
+          <p>🔥 ${item.total_orders} orders</p>
+        `;
+        resultsDiv.appendChild(card);
+      });
+    });
+  </script>
+
+</body>
+</html>
