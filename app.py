@@ -1,18 +1,20 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 import pandas as pd
 
+app = Flask(__name__)
+
+# Load your CSVs
 menu_df = pd.read_csv('fake_menu.csv')
 order_df = pd.read_csv('fake_orders.csv')
 
+# Compute popularity
 item_popularity = order_df['item_id'].value_counts().reset_index()
 item_popularity.columns = ['item_id', 'total_orders']
 menu_df = menu_df.merge(item_popularity, on='item_id', how='left').fillna({'total_orders': 0})
 
-app = Flask(__name__)
-
 @app.route('/')
 def home():
-    return "🍽️ Canteen Recommendation API is running on Vercel!"
+    return render_template('index.html')
 
 @app.route('/recommendations')
 def get_recommendations():
@@ -22,8 +24,11 @@ def get_recommendations():
     top_items = subset.sort_values('total_orders', ascending=False).head(top_n)
     return jsonify(top_items[['item_name', 'price', 'total_orders']].to_dict(orient='records'))
 
-# Vercel expects app to be named "app"
-# No need for if __name__ == "__main__"
-if __name__ == "__main__":
-    app.run(debug=True)
+# ✅ NEW: dynamic endpoint to send all categories to frontend
+@app.route('/categories')
+def get_categories():
+    categories = sorted(menu_df['category'].dropna().unique().tolist())
+    return jsonify(categories)
 
+if __name__ == '__main__':
+    app.run()
